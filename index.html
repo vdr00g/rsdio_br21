@@ -324,6 +324,10 @@
       <div class="block-label">Configuration</div>
       <div class="card">
         <div class="field">
+          <label>Anthropic API key</label>
+          <input type="password" id="anthropicKey" placeholder="sk-ant-..." oninput="save()" />
+        </div>
+        <div class="field">
           <label>Bot token</label>
           <input type="password" id="botToken" placeholder="123456:ABC-DEF..." oninput="save();updatePreview()" />
         </div>
@@ -424,13 +428,13 @@ function toggleConfig() {
 function save() {
   localStorage.setItem('tg_token', document.getElementById('botToken').value);
   localStorage.setItem('tg_channel', document.getElementById('channelId').value);
+  localStorage.setItem('anthropic_key', document.getElementById('anthropicKey').value);
 }
 
 function load() {
-  const token = localStorage.getItem('tg_token') || '';
-  const channel = localStorage.getItem('tg_channel') || '';
-  document.getElementById('botToken').value = token;
-  document.getElementById('channelId').value = channel;
+  document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
+  document.getElementById('channelId').value = localStorage.getItem('tg_channel') || '';
+  document.getElementById('anthropicKey').value = localStorage.getItem('anthropic_key') || '';
 }
 
 function handleFile(file) {
@@ -457,8 +461,7 @@ function getCaption() {
   const year = document.getElementById('year').value.trim();
   if (!artist && !name) return '';
   const lines = [];
-  if (num) lines.push(num);
-  lines.push('');
+  if (num) { lines.push(num); lines.push(''); }
   if (artist) lines.push('artist: ' + artist);
   if (name) lines.push('track: ' + name);
   if (year) lines.push('year: ' + year);
@@ -499,10 +502,13 @@ async function searchLinks() {
   setBadge('spotifyBadge', 'loading', 'searching...');
   setBadge('appleBadge', 'loading', 'searching...');
 
+  const apiKey = document.getElementById('anthropicKey').value.trim();
+  if (!apiKey) { alert('Enter your Anthropic API key in settings first.'); setBadge('spotifyBadge','idle','idle'); setBadge('appleBadge','idle','idle'); return; }
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-calls': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
